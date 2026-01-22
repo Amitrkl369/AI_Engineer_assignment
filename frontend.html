@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheet Extractor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .subject-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .subject-row input {
+            flex: 1;
+        }
+        .subject-row input[type="number"] {
+            flex: 0 0 80px;
+        }
+        .add-subject {
+            background-color: #28a745;
+        }
+        .add-subject:hover {
+            background-color: #218838;
+        }
+        .remove-subject {
+            background-color: #dc3545;
+            padding: 8px 16px;
+        }
+        .remove-subject:hover {
+            background-color: #c82333;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #007bff;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .json-raw {
+            display: none;
+        }
+        .toggle-json {
+            background-color: #6c757d;
+        }
+        .toggle-json:hover {
+            background-color: #545b62;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>Marksheet Extractor</h1>
+    <div class="container">
+        <h2>Upload Marksheet</h2>
+        <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg">
+        <br>
+        <button id="extractBtn" onclick="extractJSON()">Extract JSON</button>
+        <button id="toggleJsonBtn" onclick="toggleJsonView()" class="toggle-json">Toggle Raw JSON</button>
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span id="loading" class="loading">Processing...</span>
+        <span id="error" class="error"></span>
+    </div>
+
+    <div class="container" id="resultsContainer" style="display: none;">
+        <h2>Extracted Data</h2>
+        <div id="editableForm"></div>
+        <div class="json-raw" id="jsonRaw">
+            <h3>Raw JSON</h3>
+            <pre id="jsonOutput"></pre>
+        </div>
+        <button id="downloadBtn" onclick="downloadJSON()">Download JSON</button>
+    </div>
+
+    <script>
+        let extractedData = null;
+        let progressInterval = null;
+
+        async function extractJSON() {
+            const fileInput = document.getElementById('fileInput');
+            const extractBtn = document.getElementById('extractBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            if (!fileInput.files[0]) {
+                error.textContent = 'Please select a file first.';
+                return;
+            }
+
+            error.textContent = '';
+            loading.style.display = 'inline';
+            extractBtn.disabled = true;
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultsContainer.style.display = 'none';
+
+            // Simulate progress
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 200);
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                extractedData = await response.json();
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                displayEditableForm(extractedData);
+                document.getElementById('jsonOutput').textContent = JSON.stringify(extractedData, null, 2);
+                resultsContainer.style.display = 'block';
+
+            } catch (err) {
+                clearInterval(progressInterval);
+                progressBar.style.display = 'none';
+                error.textContent = `Error: ${err.message}`;
+            } finally {
+                loading.style.display = 'none';
+                extractBtn.disabled = false;
+            }
+        }
+
+        function displayEditableForm(data) {
+            const formDiv = document.getElementById('editableForm');
+            formDiv.innerHTML = '';
+
+            // Candidate Information
+            const candidateSection = createSection('Candidate Information');
+            const candidate = data.candidate || {};
+
+            const fields = [
+                {key: 'name', label: 'Name', value: candidate.name?.value || ''},
+                {key: 'father_name', label: 'Father Name', value: candidate.father_name?.value || ''},
+                {key: 'mother_name', label: 'Mother Name', value: candidate.mother_name?.value || ''},
+                {key: 'roll_no', label: 'Roll Number', value: candidate.roll_no?.value || ''},
+                {key: 'registration_no', label: 'Registration Number', value: candidate.registration_no?.value || ''},
+                {key: 'dob', label: 'Date of Birth', value: candidate.dob?.value || ''},
+                {key: 'exam_year', label: 'Exam Year', value: candidate.exam_year?.value || ''},
+                {key: 'board', label: 'Board', value: candidate.board?.value || ''},
+                {key: 'institution', label: 'Institution', value: candidate.institution?.value || ''}
+            ];
+
+            fields.forEach(field => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `candidate_${field.key}`;
+                input.value = field.value;
+                candidateSection.appendChild(createFormGroup(field.label, input));
+            });
+
+            formDiv.appendChild(candidateSection);
+
+            // Subjects
+            const subjectsSection = createSection('Subjects');
+            const subjectsContainer = document.createElement('div');
+            subjectsContainer.id = 'subjectsContainer';
+
+            (data.subjects || []).forEach((subject, index) => {
+                subjectsContainer.appendChild(createSubjectRow(subject, index));
+            });
+
+            const addButton = document.createElement('button');
+            addButton.textContent = 'Add Subject';
+            addButton.className = 'add-subject';
+            addButton.onclick = () => addSubject();
+            subjectsSection.appendChild(subjectsContainer);
+            subjectsSection.appendChild(addButton);
+
+            formDiv.appendChild(subjectsSection);
+
+            // Overall Result
+            const resultSection = createSection('Overall Result');
+            const overallResult = data.overall_result?.value || '';
+            const resultInput = document.createElement('input');
+            resultInput.type = 'text';
+            resultInput.id = 'overall_result';
+            resultInput.value = overallResult;
+            resultSection.appendChild(createFormGroup('Overall Result', resultInput));
+            formDiv.appendChild(resultSection);
+
+            // Issue Details
+            const issueSection = createSection('Issue Details');
+            const issueDate = data.issue_date?.value || '';
+            const issuePlace = data.issue_place?.value || '';
+
+            const dateInput = document.createElement('input');
+            dateInput.type = 'text';
+            dateInput.id = 'issue_date';
+            dateInput.value = issueDate;
+            issueSection.appendChild(createFormGroup('Issue Date', dateInput));
+
+            const placeInput = document.createElement('input');
+            placeInput.type = 'text';
+            placeInput.id = 'issue_place';
+            placeInput.value = issuePlace;
+            issueSection.appendChild(createFormGroup('Issue Place', placeInput));
+
+            formDiv.appendChild(issueSection);
+        }
+
+        function createSection(title) {
+            const section = document.createElement('div');
+            section.className = 'section';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            section.appendChild(h3);
+            return section;
+        }
+
+        function createFormGroup(labelText, inputElement) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            const label = document.createElement('label');
+            label.textContent = labelText;
+            group.appendChild(label);
+            group.appendChild(inputElement);
+            return group;
+        }
+
+        function createSubjectRow(subject, index) {
+            const row = document.createElement('div');
+            row.className = 'subject-row';
+            row.id = `subject_${index}`;
+
+            const subjectInput = document.createElement('input');
+            subjectInput.type = 'text';
+            subjectInput.placeholder = 'Subject Name';
+            subjectInput.value = subject.subject?.value || '';
+            subjectInput.id = `subject_${index}_name`;
+
+            const maxMarksInput = document.createElement('input');
+            maxMarksInput.type = 'number';
+            maxMarksInput.placeholder = 'Max Marks';
+            maxMarksInput.value = subject.max_marks?.value || '';
+            maxMarksInput.id = `subject_${index}_max`;
+
+            const obtainedInput = document.createElement('input');
+            obtainedInput.type = 'number';
+            obtainedInput.placeholder = 'Obtained';
+            obtainedInput.value = subject.obtained_marks?.value || '';
+            obtainedInput.id = `subject_${index}_obtained`;
+
+            const gradeInput = document.createElement('input');
+            gradeInput.type = 'text';
+            gradeInput.placeholder = 'Grade';
+            gradeInput.value = subject.grade?.value || '';
+            gradeInput.id = `subject_${index}_grade`;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.className = 'remove-subject';
+            removeBtn.onclick = () => removeSubject(index);
+
+            row.appendChild(subjectInput);
+            row.appendChild(maxMarksInput);
+            row.appendChild(obtainedInput);
+            row.appendChild(gradeInput);
+            row.appendChild(removeBtn);
+
+            return row;
+        }
+
+        function addSubject() {
+            const container = document.getElementById('subjectsContainer');
+            const index = container.children.length;
+            const newRow = createSubjectRow({}, index);
+            container.appendChild(newRow);
+        }
+
+        function removeSubject(index) {
+            const row = document.getElementById(`subject_${index}`);
+            if (row) row.remove();
+        }
+
+        function toggleJsonView() {
+            const jsonRaw = document.getElementById('jsonRaw');
+            jsonRaw.style.display = jsonRaw.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function downloadJSON() {
+            // Collect data from form
+            const data = {
+                candidate: {},
+                subjects: [],
+                overall_result: { value: document.getElementById('overall_result').value },
+                issue_date: { value: document.getElementById('issue_date').value },
+                issue_place: { value: document.getElementById('issue_place').value }
+            };
+
+            // Candidate fields
+            const candidateFields = ['name', 'father_name', 'mother_name', 'roll_no', 'registration_no', 'dob', 'exam_year', 'board', 'institution'];
+            candidateFields.forEach(field => {
+                const value = document.getElementById(`candidate_${field}`).value;
+                data.candidate[field] = { value: value };
+            });
+
+            // Subjects
+            const subjectsContainer = document.getElementById('subjectsContainer');
+            for (let i = 0; i < subjectsContainer.children.length; i++) {
+                const row = subjectsContainer.children[i];
+                const subject = {
+                    subject: { value: row.querySelector(`#subject_${i}_name`).value },
+                    max_marks: { value: row.querySelector(`#subject_${i}_max`).value },
+                    obtained_marks: { value: row.querySelector(`#subject_${i}_obtained`).value },
+                    grade: { value: row.querySelector(`#subject_${i}_grade`).value }
+                };
+                data.subjects.push(subject);
+            }
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', 'marksheet_edited.json');
+            linkElement.click();
+        }
+    </script>
+</body>
+</html>

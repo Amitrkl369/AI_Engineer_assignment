@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheet Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: slideInFromTop 1s ease-out;
+        }
+
+        @keyframes slideInFromTop {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            animation: fadeIn 1.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideInFromBottom 0.8s ease-out;
+        }
+
+        @keyframes slideInFromBottom {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        }
+
+        .upload-section h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .file-upload-area {
+            border: 3px dashed #d1d5db;
+            border-radius: 15px;
+            padding: 60px 40px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .file-upload-area:hover::before {
+            left: 100%;
+        }
+
+        .file-upload-area:hover {
+            border-color: #4f46e5;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f2ff 100%);
+            transform: scale(1.02);
+        }
+
+        .file-upload-area.dragover {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #9ca3af;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover .upload-icon {
+            color: #4f46e5;
+            transform: scale(1.1);
+        }
+
+        .file-upload-text {
+            font-size: 1.2rem;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #4f46e5;
+            margin-top: 10px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed, #10b981);
+            background-size: 200% 100%;
+            animation: progressShine 2s ease-in-out infinite;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 6px;
+        }
+
+        @keyframes progressShine {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .error {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #dc2626;
+            margin: 20px 0;
+            animation: shake 0.5s ease-in-out;
+            display: none;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .results-container {
+            display: none;
+            animation: fadeInScale 0.5s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .section h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3::before {
+            content: '📋';
+            font-size: 1.2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            animation: slideInFromLeft 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-group:nth-child(2) { animation-delay: 0.2s; }
+        .form-group:nth-child(3) { animation-delay: 0.3s; }
+        .form-group:nth-child(4) { animation-delay: 0.4s; }
+        .form-group:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .subjects-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .subject-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .subject-row:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .subject-row input {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .subject-row input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        .subject-row .btn-danger {
+            padding: 10px 15px;
+            font-size: 0.8rem;
+        }
+
+        .json-container {
+            display: none;
+            animation: expandDown 0.3s ease-out;
+        }
+
+        @keyframes expandDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+            }
+        }
+
+        .json-container pre {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .file-upload-area {
+                padding: 40px 20px;
+            }
+
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .subject-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .subject-row input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>📄 Marksheet Extractor</h1>
+            <p>Upload your marksheet and extract structured data with AI precision</p>
+        </div>
+
+        <div class="card upload-section">
+            <h2>Upload Your Marksheet</h2>
+            <div class="file-upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📎</div>
+                <div class="file-upload-text">
+                    Drag & drop your PDF or image here, or click to browse
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.png,.jpg,.jpeg">
+                <div class="file-name" id="fileName"></div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-primary" id="extractBtn" onclick="extractJSON()">
+                    🚀 Extract JSON
+                </button>
+                <button class="btn btn-secondary" id="toggleJsonBtn" onclick="toggleJsonView()">
+                    🔍 Toggle Raw JSON
+                </button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your marksheet with AI magic...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="card results-container" id="resultsContainer">
+            <div class="buttons">
+                <button class="btn btn-success" id="downloadBtn" onclick="downloadJSON()">
+                    💾 Download Edited JSON
+                </button>
+            </div>
+
+            <div class="json-container" id="jsonContainer">
+                <pre id="jsonOutput"></pre>
+            </div>
+
+            <div id="editableForm"></div>
+        </div>
+    </div>
+
+    <script>
+        let extractedData = null;
+        let progressInterval = null;
+
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            uploadArea.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            uploadArea.classList.remove('dragover');
+        }
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileName.textContent = files[0].name;
+                uploadArea.style.borderColor = '#10b981';
+            }
+        }
+
+        async function extractJSON() {
+            if (!fileInput.files[0]) {
+                showError('Please select a file first.');
+                return;
+            }
+
+            const extractBtn = document.getElementById('extractBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            hideError();
+            loading.style.display = 'block';
+            extractBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultsContainer.style.display = 'none';
+
+            // Animate progress
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 85) progress = 85;
+                progressFill.style.width = progress + '%';
+            }, 300);
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                extractedData = await response.json();
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                setTimeout(() => {
+                    displayEditableForm(extractedData);
+                    document.getElementById('jsonOutput').textContent = JSON.stringify(extractedData, null, 2);
+                    resultsContainer.style.display = 'block';
+                    resultsContainer.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+
+            } catch (err) {
+                clearInterval(progressInterval);
+                progressContainer.style.display = 'none';
+                showError(`Error: ${err.message}`);
+            } finally {
+                loading.style.display = 'none';
+                extractBtn.disabled = false;
+            }
+        }
+
+        function displayEditableForm(data) {
+            const formDiv = document.getElementById('editableForm');
+            formDiv.innerHTML = '';
+
+            // Candidate Information
+            const candidateSection = createSection('👤 Candidate Information');
+            const candidate = data.candidate || {};
+
+            const candidateGrid = document.createElement('div');
+            candidateGrid.className = 'form-grid';
+
+            const fields = [
+                {key: 'name', label: 'Full Name', value: candidate.name?.value || '', icon: '👤'},
+                {key: 'father_name', label: 'Father Name', value: candidate.father_name?.value || '', icon: '👨'},
+                {key: 'mother_name', label: 'Mother Name', value: candidate.mother_name?.value || '', icon: '👩'},
+                {key: 'roll_no', label: 'Roll Number', value: candidate.roll_no?.value || '', icon: '🎫'},
+                {key: 'registration_no', label: 'Registration Number', value: candidate.registration_no?.value || '', icon: '📋'},
+                {key: 'dob', label: 'Date of Birth', value: candidate.dob?.value || '', icon: '🎂'},
+                {key: 'exam_year', label: 'Exam Year', value: candidate.exam_year?.value || '', icon: '📅'},
+                {key: 'board', label: 'Board', value: candidate.board?.value || '', icon: '🏫'},
+                {key: 'institution', label: 'Institution', value: candidate.institution?.value || '', icon: '🎓'}
+            ];
+
+            fields.forEach((field, index) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `candidate_${field.key}`;
+                input.value = field.value;
+                input.placeholder = `Enter ${field.label.toLowerCase()}`;
+
+                const group = document.createElement('div');
+                group.className = 'form-group';
+                group.style.animationDelay = `${index * 0.1}s`;
+
+                const label = document.createElement('label');
+                label.innerHTML = `${field.icon} ${field.label}`;
+                label.htmlFor = `candidate_${field.key}`;
+
+                group.appendChild(label);
+                group.appendChild(input);
+                candidateGrid.appendChild(group);
+            });
+
+            candidateSection.appendChild(candidateGrid);
+            formDiv.appendChild(candidateSection);
+
+            // Subjects
+            const subjectsSection = createSection('📚 Subjects');
+
+            const subjectsGrid = document.createElement('div');
+            subjectsGrid.className = 'subjects-grid';
+            subjectsGrid.id = 'subjectsContainer';
+
+            (data.subjects || []).forEach((subject, index) => {
+                subjectsGrid.appendChild(createSubjectRow(subject, index));
+            });
+
+            const addButton = document.createElement('button');
+            addButton.textContent = '➕ Add Subject';
+            addButton.className = 'btn btn-success';
+            addButton.onclick = () => addSubject();
+
+            subjectsSection.appendChild(subjectsGrid);
+            subjectsSection.appendChild(addButton);
+            formDiv.appendChild(subjectsSection);
+
+            // Overall Result
+            const resultSection = createSection('🏆 Overall Result');
+            const overallResult = data.overall_result?.value || '';
+            const resultInput = document.createElement('input');
+            resultInput.type = 'text';
+            resultInput.id = 'overall_result';
+            resultInput.value = overallResult;
+            resultInput.placeholder = 'Enter overall result (e.g., Pass, First Division)';
+
+            const resultGroup = document.createElement('div');
+            resultGroup.className = 'form-group';
+            const resultLabel = document.createElement('label');
+            resultLabel.innerHTML = '🎯 Overall Result';
+            resultLabel.htmlFor = 'overall_result';
+            resultGroup.appendChild(resultLabel);
+            resultGroup.appendChild(resultInput);
+            resultSection.appendChild(resultGroup);
+            formDiv.appendChild(resultSection);
+
+            // Issue Details
+            const issueSection = createSection('📜 Issue Details');
+            const issueGrid = document.createElement('div');
+            issueGrid.className = 'form-grid';
+
+            const issueDate = data.issue_date?.value || '';
+            const issuePlace = data.issue_place?.value || '';
+
+            const dateInput = document.createElement('input');
+            dateInput.type = 'text';
+            dateInput.id = 'issue_date';
+            dateInput.value = issueDate;
+            dateInput.placeholder = 'Enter issue date';
+
+            const dateGroup = document.createElement('div');
+            dateGroup.className = 'form-group';
+            const dateLabel = document.createElement('label');
+            dateLabel.innerHTML = '📅 Issue Date';
+            dateLabel.htmlFor = 'issue_date';
+            dateGroup.appendChild(dateLabel);
+            dateGroup.appendChild(dateInput);
+            issueGrid.appendChild(dateGroup);
+
+            const placeInput = document.createElement('input');
+            placeInput.type = 'text';
+            placeInput.id = 'issue_place';
+            placeInput.value = issuePlace;
+            placeInput.placeholder = 'Enter issue place';
+
+            const placeGroup = document.createElement('div');
+            placeGroup.className = 'form-group';
+            const placeLabel = document.createElement('label');
+            placeLabel.innerHTML = '📍 Issue Place';
+            placeLabel.htmlFor = 'issue_place';
+            placeGroup.appendChild(placeLabel);
+            placeGroup.appendChild(placeInput);
+            issueGrid.appendChild(placeGroup);
+
+            issueSection.appendChild(issueGrid);
+            formDiv.appendChild(issueSection);
+        }
+
+        function createSection(title) {
+            const section = document.createElement('div');
+            section.className = 'section';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            section.appendChild(h3);
+            return section;
+        }
+
+        function createSubjectRow(subject, index) {
+            const row = document.createElement('div');
+            row.className = 'subject-row';
+            row.id = `subject_${index}`;
+
+            const subjectInput = document.createElement('input');
+            subjectInput.type = 'text';
+            subjectInput.placeholder = 'Subject Name';
+            subjectInput.value = subject.subject?.value || '';
+            subjectInput.id = `subject_${index}_name`;
+
+            const maxMarksInput = document.createElement('input');
+            maxMarksInput.type = 'number';
+            maxMarksInput.placeholder = 'Max Marks';
+            maxMarksInput.value = subject.max_marks?.value || '';
+            maxMarksInput.id = `subject_${index}_max`;
+
+            const obtainedInput = document.createElement('input');
+            obtainedInput.type = 'number';
+            obtainedInput.placeholder = 'Obtained';
+            obtainedInput.value = subject.obtained_marks?.value || '';
+            obtainedInput.id = `subject_${index}_obtained`;
+
+            const gradeInput = document.createElement('input');
+            gradeInput.type = 'text';
+            gradeInput.placeholder = 'Grade';
+            gradeInput.value = subject.grade?.value || '';
+            gradeInput.id = `subject_${index}_grade`;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '🗑️';
+            removeBtn.className = 'btn btn-danger';
+            removeBtn.onclick = () => removeSubject(index);
+            removeBtn.title = 'Remove subject';
+
+            row.appendChild(subjectInput);
+            row.appendChild(maxMarksInput);
+            row.appendChild(obtainedInput);
+            row.appendChild(gradeInput);
+            row.appendChild(removeBtn);
+
+            return row;
+        }
+
+        function addSubject() {
+            const container = document.getElementById('subjectsContainer');
+            const index = container.children.length;
+            const newRow = createSubjectRow({}, index);
+            container.appendChild(newRow);
+            newRow.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function removeSubject(index) {
+            const row = document.getElementById(`subject_${index}`);
+            if (row) {
+                row.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => row.remove(), 300);
+            }
+        }
+
+        function toggleJsonView() {
+            const jsonContainer = document.getElementById('jsonContainer');
+            const isVisible = jsonContainer.style.display !== 'none';
+            jsonContainer.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function downloadJSON() {
+            // Collect data from form
+            const data = {
+                candidate: {},
+                subjects: [],
+                overall_result: { value: document.getElementById('overall_result').value },
+                issue_date: { value: document.getElementById('issue_date').value },
+                issue_place: { value: document.getElementById('issue_place').value }
+            };
+
+            // Candidate fields
+            const candidateFields = ['name', 'father_name', 'mother_name', 'roll_no', 'registration_no', 'dob', 'exam_year', 'board', 'institution'];
+            candidateFields.forEach(field => {
+                const value = document.getElementById(`candidate_${field}`).value;
+                data.candidate[field] = { value: value };
+            });
+
+            // Subjects
+            const subjectsContainer = document.getElementById('subjectsContainer');
+            for (let i = 0; i < subjectsContainer.children.length; i++) {
+                const row = subjectsContainer.children[i];
+                const subject = {
+                    subject: { value: row.querySelector(`#subject_${i}_name`).value },
+                    max_marks: { value: row.querySelector(`#subject_${i}_max`).value },
+                    obtained_marks: { value: row.querySelector(`#subject_${i}_obtained`).value },
+                    grade: { value: row.querySelector(`#subject_${i}_grade`).value }
+                };
+                data.subjects.push(subject);
+            }
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', 'marksheet_edited.json');
+            linkElement.click();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-multipart
+aiofiles
+pydantic
+pytesseract
+pdf2image
+Pillow
+openai
+python-dotenv
+requests
+pytest
+httpx
+langchain
