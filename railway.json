@@ -1,0 +1,11 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "python app/main.py"
+  },
+  "nixpacks": {
+    "aptPkgs": ["tesseract-ocr", "tesseract-ocr-eng", "libpoppler-cpp-dev", "libgl1-mesa-glx"]
+  }
+}
