@@ -100,9 +100,33 @@ curl -X POST "http://localhost:8000/api/v1/extract" \
    - Railway will build and deploy automatically
    - Get your public URL from the Railway dashboard
 
+### Render
+
+1. **Go to [Render.com](https://render.com)** and create a free account
+2. **Create a new Web Service** and connect your GitHub repo
+3. **Configure build settings**:
+   - Runtime: Python 3
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python app/main.py`
+4. **Add environment variable**: `OPENAI_API_KEY`
+5. **Deploy**
+
+### Vercel (Not Recommended)
+
+⚠️ **Note**: Vercel is primarily designed for frontend apps and serverless functions. This FastAPI app may not work optimally due to:
+- File upload limitations
+- Execution time limits
+- Serverless function constraints
+
+If you still want to try:
+
+1. **Go to [Vercel.com](https://vercel.com)** and connect your GitHub repo
+2. **Add environment variable**: `OPENAI_API_KEY`
+3. **Deploy** (Vercel will use the `vercel.json` configuration)
+
 ### Manual Deployment
 
-For other platforms (Heroku, Render, etc.):
+For other platforms (Heroku, etc.):
 
 1. **Install system dependencies** (for Tesseract OCR)
    ```bash
