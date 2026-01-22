@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marksheet Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #5a67d8;
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .upload-area.dragover {
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 1.5rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            color: #718096;
+            font-size: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .extract-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin-top: 20px;
+        }
+
+        .extract-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .extract-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-container {
+            width: 100%;
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .results-container {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .section h3 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .subjects-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .subject-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .subject-row input {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .subject-row input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+            transform: translateY(-1px);
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .json-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .json-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .error {
+            display: none;
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #feb2b2;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .upload-section {
+                padding: 30px 20px;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .subject-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>📄 Marksheet Extractor</h1>
+            <p>AI-powered document processing with interactive editing</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📎</div>
+                <div class="upload-text">Drop your marksheet here or click to browse</div>
+                <div class="upload-subtext">Supports PDF and image files (PNG, JPG, JPEG)</div>
+                <input type="file" class="file-input" id="fileInput" accept=".pdf,.png,.jpg,.jpeg">
+            </div>
+            <button class="extract-btn" id="extractBtn" disabled>🚀 Extract Data</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your document...</p>
+        </div>
+
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results-container" id="resultsContainer">
+            <div id="editableForm"></div>
+
+            <div class="actions">
+                <button class="action-btn" onclick="toggleJsonView()">📄 Toggle JSON View</button>
+                <button class="action-btn" onclick="downloadJSON()">💾 Download JSON</button>
+            </div>
+
+            <div class="json-container" id="jsonContainer" style="display: none;">
+                <h3>📋 Extracted Data (JSON)</h3>
+                <pre class="json-output" id="jsonOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Uses environment variable or defaults
+        const API_BASE_URL = process.env.API_BASE_URL ||
+                            (window.location.origin.includes('vercel.app')
+                             ? 'https://your-api-url.vercel.app'  // Replace with your actual API URL
+                             : window.location.origin);
+
+        const API_ENDPOINT = `${API_BASE_URL}/api/v1/extract`;
+
+        console.log('API Endpoint:', API_ENDPOINT); // For debugging
+
+        let extractedData = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const extractBtn = document.getElementById('extractBtn');
+            const loading = document.getElementById('loading');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            // Upload area interactions
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    updateFileDisplay();
+                }
+            });
+
+            fileInput.addEventListener('change', updateFileDisplay);
+
+            function updateFileDisplay() {
+                const file = fileInput.files[0];
+                if (file) {
+                    const fileName = file.name;
+                    const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                    document.querySelector('.upload-text').textContent = `Selected: ${fileName}`;
+                    document.querySelector('.upload-subtext').textContent = `Size: ${fileSize} MB`;
+                    extractBtn.disabled = false;
+                }
+            }
+
+            // Extract button click
+            extractBtn.addEventListener('click', async () => {
+                if (!fileInput.files[0]) return;
+
+                hideError();
+                loading.style.display = 'block';
+                extractBtn.disabled = true;
+                progressContainer.style.display = 'block';
+                progressFill.style.width = '0%';
+
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = `${progress}%`;
+                }, 300);
+
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                try {
+                    console.log('Sending request to:', API_ENDPOINT);
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    extractedData = await response.json();
+                    clearInterval(progressInterval);
+                    progressFill.style.width = '100%';
+
+                    setTimeout(() => {
+                        displayEditableForm(extractedData);
+                        document.getElementById('jsonOutput').textContent = JSON.stringify(extractedData, null, 2);
+                        resultsContainer.style.display = 'block';
+                        resultsContainer.scrollIntoView({ behavior: 'smooth' });
+                    }, 500);
+
+                } catch (err) {
+                    clearInterval(progressInterval);
+                    progressContainer.style.display = 'none';
+                    showError(`Error: ${err.message}`);
+                    console.error('API Error:', err);
+                } finally {
+                    loading.style.display = 'none';
+                    extractBtn.disabled = false;
+                }
+            });
+        });
+
+        function displayEditableForm(data) {
+            const formDiv = document.getElementById('editableForm');
+            formDiv.innerHTML = '';
+
+            // Candidate Information
+            const candidateSection = createSection('👤 Candidate Information');
+            const candidate = data.candidate || {};
+
+            const candidateGrid = document.createElement('div');
+            candidateGrid.className = 'form-grid';
+
+            const fields = [
+                {key: 'name', label: 'Full Name', value: candidate.name?.value || '', icon: '👤'},
+                {key: 'father_name', label: 'Father Name', value: candidate.father_name?.value || '', icon: '👨'},
+                {key: 'mother_name', label: 'Mother Name', value: candidate.mother_name?.value || '', icon: '👩'},
+                {key: 'roll_no', label: 'Roll Number', value: candidate.roll_no?.value || '', icon: '🎫'},
+                {key: 'registration_no', label: 'Registration Number', value: candidate.registration_no?.value || '', icon: '📋'},
+                {key: 'dob', label: 'Date of Birth', value: candidate.dob?.value || '', icon: '🎂'},
+                {key: 'exam_year', label: 'Exam Year', value: candidate.exam_year?.value || '', icon: '📅'},
+                {key: 'board', label: 'Board', value: candidate.board?.value || '', icon: '🏫'},
+                {key: 'institution', label: 'Institution', value: candidate.institution?.value || '', icon: '🎓'}
+            ];
+
+            fields.forEach((field, index) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `candidate_${field.key}`;
+                input.value = field.value;
+                input.placeholder = `Enter ${field.label.toLowerCase()}`;
+
+                const group = document.createElement('div');
+                group.className = 'form-group';
+                group.style.animationDelay = `${index * 0.1}s`;
+
+                const label = document.createElement('label');
+                label.innerHTML = `${field.icon} ${field.label}`;
+                label.htmlFor = `candidate_${field.key}`;
+
+                group.appendChild(label);
+                group.appendChild(input);
+                candidateGrid.appendChild(group);
+            });
+
+            candidateSection.appendChild(candidateGrid);
+            formDiv.appendChild(candidateSection);
+
+            // Subjects
+            const subjectsSection = createSection('📚 Subjects');
+
+            const subjectsGrid = document.createElement('div');
+            subjectsGrid.className = 'subjects-grid';
+            subjectsGrid.id = 'subjectsContainer';
+
+            (data.subjects || []).forEach((subject, index) => {
+                subjectsGrid.appendChild(createSubjectRow(subject, index));
+            });
+
+            const addButton = document.createElement('button');
+            addButton.textContent = '➕ Add Subject';
+            addButton.className = 'btn btn-success';
+            addButton.onclick = () => addSubject();
+
+            subjectsSection.appendChild(subjectsGrid);
+            subjectsSection.appendChild(addButton);
+            formDiv.appendChild(subjectsSection);
+
+            // Overall Result
+            const resultSection = createSection('🏆 Overall Result');
+            const overallResult = data.overall_result?.value || '';
+            const resultInput = document.createElement('input');
+            resultInput.type = 'text';
+            resultInput.id = 'overall_result';
+            resultInput.value = overallResult;
+            resultInput.placeholder = 'Enter overall result (e.g., Pass, First Division)';
+
+            const resultGroup = document.createElement('div');
+            resultGroup.className = 'form-group';
+            const resultLabel = document.createElement('label');
+            resultLabel.innerHTML = '🎯 Overall Result';
+            resultLabel.htmlFor = 'overall_result';
+            resultGroup.appendChild(resultLabel);
+            resultGroup.appendChild(resultInput);
+            resultSection.appendChild(resultGroup);
+            formDiv.appendChild(resultSection);
+
+            // Issue Details
+            const issueSection = createSection('📜 Issue Details');
+            const issueGrid = document.createElement('div');
+            issueGrid.className = 'form-grid';
+
+            const issueDate = data.issue_date?.value || '';
+            const issuePlace = data.issue_place?.value || '';
+
+            const dateInput = document.createElement('input');
+            dateInput.type = 'text';
+            dateInput.id = 'issue_date';
+            dateInput.value = issueDate;
+            dateInput.placeholder = 'Enter issue date';
+
+            const dateGroup = document.createElement('div');
+            dateGroup.className = 'form-group';
+            const dateLabel = document.createElement('label');
+            dateLabel.innerHTML = '📅 Issue Date';
+            dateLabel.htmlFor = 'issue_date';
+            dateGroup.appendChild(dateLabel);
+            dateGroup.appendChild(dateInput);
+            issueGrid.appendChild(dateGroup);
+
+            const placeInput = document.createElement('input');
+            placeInput.type = 'text';
+            placeInput.id = 'issue_place';
+            placeInput.value = issuePlace;
+            placeInput.placeholder = 'Enter issue place';
+
+            const placeGroup = document.createElement('div');
+            placeGroup.className = 'form-group';
+            const placeLabel = document.createElement('label');
+            placeLabel.innerHTML = '📍 Issue Place';
+            placeLabel.htmlFor = 'issue_place';
+            placeGroup.appendChild(placeLabel);
+            placeGroup.appendChild(placeInput);
+            issueGrid.appendChild(placeGroup);
+
+            issueSection.appendChild(issueGrid);
+            formDiv.appendChild(issueSection);
+        }
+
+        function createSection(title) {
+            const section = document.createElement('div');
+            section.className = 'section';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            section.appendChild(h3);
+            return section;
+        }
+
+        function createSubjectRow(subject, index) {
+            const row = document.createElement('div');
+            row.className = 'subject-row';
+            row.id = `subject_${index}`;
+
+            const subjectInput = document.createElement('input');
+            subjectInput.type = 'text';
+            subjectInput.placeholder = 'Subject Name';
+            subjectInput.value = subject.subject?.value || '';
+            subjectInput.id = `subject_${index}_name`;
+
+            const maxMarksInput = document.createElement('input');
+            maxMarksInput.type = 'number';
+            maxMarksInput.placeholder = 'Max Marks';
+            maxMarksInput.value = subject.max_marks?.value || '';
+            maxMarksInput.id = `subject_${index}_max`;
+
+            const obtainedInput = document.createElement('input');
+            obtainedInput.type = 'number';
+            obtainedInput.placeholder = 'Obtained';
+            obtainedInput.value = subject.obtained_marks?.value || '';
+            obtainedInput.id = `subject_${index}_obtained`;
+
+            const gradeInput = document.createElement('input');
+            gradeInput.type = 'text';
+            gradeInput.placeholder = 'Grade';
+            gradeInput.value = subject.grade?.value || '';
+            gradeInput.id = `subject_${index}_grade`;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '🗑️';
+            removeBtn.className = 'btn btn-danger';
+            removeBtn.onclick = () => removeSubject(index);
+            removeBtn.title = 'Remove subject';
+
+            row.appendChild(subjectInput);
+            row.appendChild(maxMarksInput);
+            row.appendChild(obtainedInput);
+            row.appendChild(gradeInput);
+            row.appendChild(removeBtn);
+
+            return row;
+        }
+
+        function addSubject() {
+            const container = document.getElementById('subjectsContainer');
+            const index = container.children.length;
+            const newRow = createSubjectRow({}, index);
+            container.appendChild(newRow);
+            newRow.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function removeSubject(index) {
+            const row = document.getElementById(`subject_${index}`);
+            if (row) {
+                row.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => row.remove(), 300);
+            }
+        }
+
+        function toggleJsonView() {
+            const jsonContainer = document.getElementById('jsonContainer');
+            const isVisible = jsonContainer.style.display !== 'none';
+            jsonContainer.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function downloadJSON() {
+            // Collect data from form
+            const data = {
+                candidate: {},
+                subjects: [],
+                overall_result: { value: document.getElementById('overall_result').value },
+                issue_date: { value: document.getElementById('issue_date').value },
+                issue_place: { value: document.getElementById('issue_place').value }
+            };
+
+            // Candidate fields
+            const candidateFields = ['name', 'father_name', 'mother_name', 'roll_no', 'registration_no', 'dob', 'exam_year', 'board', 'institution'];
+            candidateFields.forEach(field => {
+                const value = document.getElementById(`candidate_${field}`).value;
+                data.candidate[field] = { value: value };
+            });
+
+            // Subjects
+            const subjectsContainer = document.getElementById('subjectsContainer');
+            for (let i = 0; i < subjectsContainer.children.length; i++) {
+                const row = subjectsContainer.children[i];
+                const subject = {
+                    subject: { value: row.querySelector(`#subject_${i}_name`).value },
+                    max_marks: { value: row.querySelector(`#subject_${i}_max`).value },
+                    obtained_marks: { value: row.querySelector(`#subject_${i}_obtained`).value },
+                    grade: { value: row.querySelector(`#subject_${i}_grade`).value }
+                };
+                data.subjects.push(subject);
+            }
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', 'marksheet_edited.json');
+            linkElement.click();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
